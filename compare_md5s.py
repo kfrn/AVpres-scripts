@@ -17,6 +17,7 @@ Note that the audio stream isn't reencoded in BAVC's workflow - so there really 
 import filecmp
 import os
 import re
+import sys
 
 
 AUDIO = 'audio'
@@ -42,7 +43,7 @@ def file_contents_match(base_filename, stream_type):
     return filecmp.cmp(f'{base_filename}.mkv.{stream_type}md5', f'{base_filename}.mov.{stream_type}md5')
 
 
-def report_on_files(filenames):
+def report_on_files(filenames, path):
     stats = {
         AUDIO: {
             MATCHES: [],
@@ -55,12 +56,14 @@ def report_on_files(filenames):
     }
 
     for f in filenames:
-        if audio_match(f):
+        file_path = os.path.join(path, f)
+
+        if audio_match(file_path):
             stats[AUDIO][MATCHES].append(f)
         else:
             stats[AUDIO][MISMATCHES].append(f)
 
-        if video_match(f):
+        if video_match(file_path):
             stats[VIDEO][MATCHES].append(f)
         else:
             stats[VIDEO][MISMATCHES].append(f)
@@ -93,13 +96,31 @@ def files_affected_summary(stats, stream_type):
         return 'No worries!'
 
 
+def set_md5_directory():
+    if len(sys.argv) == 1:
+        print('No directory supplied! Will attempt to run script on contents of current directory')
+        return '.'
+
+    path = sys.argv[1]
+
+    if os.path.exists(path):
+        return path
+    else:
+        print('Not a valid directory! Will attempt to run script on contents of current directory')
+        return '.'
+
+
 def main():
-    # Will look at files in the current directory (of the script)
-    filenames = [f for f in os.listdir('.') if os.path.isfile(f)]
+    path = set_md5_directory()
+    filenames = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     mov_md5_filenames = [f for f in filenames if re.search('.mkv.videomd5', f)]
     base_filenames = [retrieve_base_filename(f) for f in mov_md5_filenames]
 
-    stats = report_on_files(base_filenames)
+    if len(base_filenames) == 0:
+        print('No relevant files detected!')
+        return
+
+    stats = report_on_files(base_filenames, path)
     print_stats(base_filenames, stats)
 
 

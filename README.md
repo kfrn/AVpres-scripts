@@ -20,4 +20,8 @@ This script addresses that use case.
 To run:
 ```bash
 python3 compare_md5s.py
+# Or:
+python3 compare_md5s.py '/path/to/md5_directory'
 ```
+
+Note that the path supplied is relative to the directory from which you call the script.
